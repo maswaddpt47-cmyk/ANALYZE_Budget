@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Bancaire v1306-1506</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f1f5f9;color:#1e293b;min-height:100vh}
+header{background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+header h1{font-size:18px;font-weight:800}
+header p{font-size:12px;opacity:.8;margin-top:2px}
+.header-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+main{padding:20px;max-width:1300px;margin:0 auto}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:18px}
+#import-panel{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:18px;margin-bottom:18px}
+#import-panel h2{color:#1e40af;font-size:15px;margin-bottom:14px}
+.import-grid{display:grid;grid-template-columns:1fr 1fr 1.5fr auto;gap:10px;align-items:end}
+@media(max-width:700px){.import-grid{grid-template-columns:1fr}}
+label.lbl{font-size:11px;font-weight:700;color:#475569;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=file],select{width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;background:#fff;outline:none}
+input[type=text]:focus,select:focus{border-color:#2563eb}
+.btn{padding:9px 18px;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;transition:.15s}
+.btn-primary{background:#2563eb;color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-primary:disabled{background:#93c5fd;cursor:not-allowed}
+.btn-danger{background:#dc2626;color:#fff}
+.btn-ghost{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.btn-ghost:hover{background:rgba(255,255,255,.3)}
+#account-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pill{padding:6px 14px;border-radius:20px;border:2px solid #2563eb;background:#fff;color:#2563eb;font-weight:700;font-size:12px;cursor:pointer;transition:.15s}
+.pill.active{background:#2563eb;color:#fff}
+#filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+#filters select,#filters input[type=text]{max-width:200px}
+.count{font-size:12px;color:#64748b}
+#kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{font-size:20px;font-weight:800}
+.kpi-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.green{color:#16a34a}.red{color:#dc2626}.blue{color:#2563eb}.purple{color:#7c3aed}
+.tabs{display:flex;gap:2px;border-bottom:2px solid #e2e8f0;margin-bottom:18px;overflow-x:auto}
+.tab{padding:10px 16px;border:none;background:none;cursor:pointer;font-weight:600;font-size:13px;color:#64748b;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab.active{color:#2563eb;border-bottom-color:#2563eb}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.charts-grid{grid-template-columns:1fr}}
+.chart-full{grid-column:1/-1}
+.chart-wrap{position:relative;height:220px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:9px 10px;text-align:left;border-bottom:2px solid #e2e8f0;color:#64748b;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f8fafc;vertical-align:middle}
+tr:hover td{background:#f8fafc}
+.label-cell{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.amount-pos{color:#16a34a;font-weight:700;text-align:right}
+.amount-neg{color:#dc2626;font-weight:700;text-align:right}
+.cat-bar-wrap{display:flex;align-items:center;gap:8px}
+.cat-bar-bg{flex:1;background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:4px}
+.cat-pct{font-size:11px;font-weight:700;min-width:34px;text-align:right}
+#comptes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.acct-card{background:#fff;border:1px solid #e2e8f0;border-left:4px solid #2563eb;border-radius:10px;padding:16px}
+.acct-name{font-weight:800;font-size:15px;margin-bottom:2px}
+.acct-bank{font-size:11px;color:#94a3b8;margin-bottom:12px}
+.acct-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px}
+.acct-row .lbl2{color:#64748b}
+.error{color:#dc2626;font-size:12px;margin-top:8px;font-weight:600;padding:8px;background:#fef2f2;border-radius:6px;border:1px solid #fecaca}
+.hint{font-size:11px;color:#64748b;margin-top:8px}
+#empty{text-align:center;padding:60px 20px;color:#94a3b8}
+#empty .ico{font-size:48px;margin-bottom:12px}
+#empty h2{font-size:18px;font-weight:700}
+/* Log debug toggle */
+#debug-log{background:#1e293b;color:#94a3b8;font-size:11px;font-family:monospace;padding:10px;border-radius:8px;margin-top:8px;max-height:120px;overflow-y:auto;display:none}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 Dashboard Bancaire</h1>
+    <p>v13/06 17:09 · Analyse multi-comptes · multi-établissements · <span style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:10px;font-size:11px">🔒 Données 100% locales — aucun envoi sur internet</span></p>
+  </div>
+  <div class="header-btns">
+    <span id="hdr-info" style="font-size:12px;opacity:.8"></span>
+    <button class="btn btn-ghost" onclick="toggleImport()">+ Importer</button>
+    <button class="btn btn-danger" id="btn-clear" onclick="clearAll()" style="display:none">Tout effacer</button>
+  </div>
+</header>
+
+<main>
+  <div id="import-panel">
+    <h2>📥 Importer des relevés</h2>
+    <!-- Zone de drop -->
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()"
+      style="border:2px dashed #93c5fd;border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;background:#f0f7ff;transition:.2s;margin-bottom:12px"
+      ondragover="event.preventDefault();this.style.borderColor='#2563eb';this.style.background='#dbeafe'"
+      ondragleave="this.style.borderColor='#93c5fd';this.style.background='#f0f7ff'"
+      ondrop="onDrop(event)">
+      <div style="font-size:28px;margin-bottom:6px">📂</div>
+      <div style="font-weight:700;color:#1e40af;font-size:14px">Clique ou glisse tes fichiers ici</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">CSV · XLSX · PDF — plusieurs fichiers simultanément</div>
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf,.txt" multiple
+        style="display:none" onchange="onFilesChange(this.files)">
+    </div>
+    <!-- Liste des fichiers détectés -->
+    <div id="file-list" style="display:none;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-import" onclick="doImport()" disabled>Tout importer</button>
+      <span id="import-progress" style="font-size:12px;color:#64748b"></span>
+    </div>
+    <div id="import-error" class="error hidden"></div>
+    <div id="debug-log"></div>
+    <p class="hint" style="margin-top:8px">
+      🔒 <strong>Données 100% locales</strong> — aucun fichier n'est envoyé sur internet. Tout est traité dans votre navigateur.<br>
+      📄 Banques supportées : <strong>Hello Bank · Monabanq · Crédit Agricole · Nickel</strong> · et toutes banques via CSV/XLSX<br>
+      ⚡ En cas d'échec du PDF, exportez un CSV depuis votre espace client bancaire.
+    </p>
+  </div>
+
+  <div id="empty">
+    <div class="ico">🏦</div>
+    <h2>Aucune donnée</h2>
+    <p style="margin-top:6px;font-size:14px">Importe tes relevés pour commencer l'analyse</p>
+  </div>
+
+  <div id="dashboard" class="hidden">
+    <div id="account-pills"></div>
+    <div id="filters">
+      <select id="filter-month" onchange="applyFilters()"><option value="Tous">Tous les mois</option></select>
+      <input type="text" id="filter-search" placeholder="🔍 Libellé / catégorie…" oninput="applyFilters()" style="max-width:220px">
+      <span class="count" id="filter-count"></span>
+    </div>
+    <div id="kpis">
+      <div class="kpi"><div class="kpi-label" id="kpi-balance-label">💰 Solde réel</div><div class="kpi-value" id="kpi-balance">—</div><div class="kpi-sub" id="kpi-ops"></div></div>
+      <div class="kpi"><div class="kpi-label">📈 Entrées</div><div class="kpi-value green" id="kpi-in">—</div><div class="kpi-sub" id="kpi-in-sub"></div></div>
+      <div class="kpi"><div class="kpi-label">📉 Sorties</div><div class="kpi-value red" id="kpi-out">—</div></div>
+      <div class="kpi"><div class="kpi-label">📊 Variation mois</div><div class="kpi-value" id="kpi-avg">—</div></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('apercu',this)">📊 Aperçu</button>
+      <button class="tab" onclick="showTab('transactions',this)">📋 Transactions</button>
+      <button class="tab" onclick="showTab('categories',this)">🏷️ Catégories</button>
+      <button class="tab" onclick="showTab('comptes',this)">🏦 Comptes</button>
+    </div>
+    <div id="tab-apercu">
+      <div class="charts-grid">
+        <div class="card"><div style="font-weight:700;margin-bottom:12px;font-size:14px">Flux mensuels</div><div class="chart-wrap"><canvas id="chart-monthly"></canvas></div></div>
+        <div class="card"><div style="font-weight:700;margin-bottom:12px;font-size:14px">Répartition dépenses</div><div class="chart-wrap"><canvas id="chart-pie"></canvas></div></div>
+        <div class="card chart-full"><div style="font-weight:700;margin-bottom:12px;font-size:14px">Évolution solde cumulé</div><div class="chart-wrap" style="height:160px"><canvas id="chart-line"></canvas></div></div>
+      </div>
+    </div>
+    <div id="tab-transactions" class="hidden">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Compte</th><th>Banque</th><th style="text-align:right">Montant</th></tr></thead>
+            <tbody id="tx-tbody"></tbody>
+          </table>
+          <div id="tx-more" class="hidden" style="text-align:center;padding:10px;font-size:12px;color:#64748b"></div>
+        </div>
+      </div>
+    </div>
+    <div id="tab-categories" class="hidden">
+      <div class="card">
+        <table>
+          <thead><tr><th>Catégorie</th><th>Opérations</th><th style="text-align:right">Total</th><th>Part</th></tr></thead>
+          <tbody id="cat-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tab-comptes" class="hidden">
+      <div id="comptes-grid"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const COLORS=["#2563eb","#16a34a","#dc2626","#d97706","#7c3aed","#0891b2","#be185d","#065f46","#92400e","#1e40af"];
+const CATEGORIES=[
+  // ── Alimentation : GMS, hard discount, drive, boucheries, boulangeries,
+  //    restauration rapide, épiceries, marchés, tabac-presse
+  {name:"Alimentation", keys:[
+    // Grandes surfaces
+    "auchan","carrefour","leclerc","intermarche","super u","hyper u","casino","cora",
+    "lidl","aldi","netto","leader price","franprix","monoprix","spar","simply",
+    "bio coop","naturalia","biomonde","biocoop","montayral distr","montayral","halle fermiere","la halle fermiere","u express","express fumel","express ",
+    // Drive
+    "drive",
+    // Boucherie, boulangerie, marché, épicerie
+    "boucherie","boulangerie","patisserie","fromagerie","poissonner","primeur",
+    "marche","epicerie","superette","alimentation","carre vert","carre bio",
+    // Tabac-presse
+    "tabac","presse","maison de la presse",
+    // Divers alimentaires
+    "repas","dejeuner","diner","petit dej",
+  ]},
+  // ── Transport : carburant, péages, transports en commun, VTC, stationnement
+  {name:"Transport", keys:[
+    "sncf","ratp","transilien","ter ","ouigo","tgv","eurostar","bus","metro","tramway",
+    "tram","navigo","tisseo","tcl","tan ","tap ","tam ","reseau",
+    "uber","taxi","blablacar","kapten","bolt","lime","bird","trottin",
+    "total","bp ","esso","shell","q8","leclerc carburant","essence","carburant",
+    "autoroute","sanef","vinci autoroute","parking","horodateur","indigo park",
+    "saemes","effia","aeroport","air france","easyjet","ryanair","transavia",
+    "location voiture","hertz","europcar","avis ","sixt",
+  ]},
+  // ── Logement : loyer, charges, énergie, télécom, assurances habitation
+  {name:"Logement", keys:[
+    "loyer","charges","syndic","copropriete","gardien",
+    "edf","enedis","engie","totalenergies","ekwateur","ilek","direct energie",
+    "eau","veolia","saur","suez","lyonnaise",
+    "gaz","butagaz","primagaz",
+    "orange","sfr","bouygues","free ","numericable","bbox","livebox","freebox",
+    "internet","fibre","adsl","sharesub","google one","icloud","dropbox",
+    "assurance habitation","maaf hab","mma hab","axa hab","groupama hab","smh",
+    "primeo","energie","evollis","personal finance location",
+  ]},
+  // ── Santé : pharmacie, médecins, mutuelles, optique, para-pharmacie
+  {name:"Santé", keys:[
+    "pharmacie","para pharmacie","parapharmacie","docteur","medecin","generaliste",
+    "specialiste","hopital","clinique","ehpad","laboratoire","analyse","radiologie",
+    "kinesitherapeute","osteopathe","dentiste","orthodontiste","opticien","optique",
+    "audition","podologue","psychologue","infirmier","aide soignant",
+    "mutuelle","maaf sante","mma sante","axa sante","april","alan ","alan.eu",
+    "cpam","secu","ameli","caf","doctolib","qare","medadom","livi",
+    "cnp","assurance vie cnp","prevoyance",
+  ]},
+  // ── Restauration : restaurants, fast-food, livraison repas
+  {name:"Restauration", keys:[
+    "restaurant","brasserie","bistrot","cafe de","bisto","auberge","taverne",
+    "mcdo","mcdonald","burger king","quick","kfc","subway","five guys","paul ",
+    "pizza","kebab","sushi","japonais","chinois","indien","thai","libanais",
+    "tapas","roti","snack","sandwicherie","traiteur","cantine","self ",
+    "deliveroo","ubereats","uber eats","just eat","gorillas","getir","frichti",
+    "repas","dejeuner","diner","petit dej","resto",
+  ]},
+  // ── Loisirs & Culture : streaming, jeux, sport, sorties, voyages
+  {name:"Loisirs", keys:[
+    "netflix","spotify","deezer","amazon prime","disney","apple tv","canal","canalplus",
+    "hulu","youtube premium","twitch","steam","playstation","xbox","nintendo",
+    "fnac","cultura","gibert","book","librairie","mediatheque",
+    "cinema","theatre","concert","spectacle","musee","exposition","festival",
+    "salle sport","fitness","basic fit","neoness","keep cool","l'appart","movesport",
+    "piscine","tennis","foot","rugby","basket",
+    "manomano","amazon","ebay","vinted","leboncoin","backmarket","darty","boulanger","anthropic",
+    "entree libre","loisirs","bowling","karting","laser","paintball","escape",
+    "hotel","airbnb","booking","abritel","gite","camping","club med","look voyage",
+    "voyage","vacances","thomas cook","nouvelles frontieres",
+  ]},
+  // ── Revenus : salaires, allocations, virements entrants, remboursements
+  {name:"Revenus", keys:[
+    "salaire","paie","traitement","solde mensuel",
+    "vir sct inst recu","vir inst recu","virement recu","vir inst m ","vir inst mme ",
+    "vir de m ","vir de mme ","recu de","paierie dept","paierie region",
+    "tresor public","impots remb","remboursement impot",
+    "caf","aide","allocation","rsa","aah","apl","als","alf","prime activite",
+    "retraite","pension","cpam rembours","mutuelle rembours","prevoyance rembours",
+    "indemnite","ij ","ijss","chomage","pole emploi","france travail",
+    "dividende","interet credit","livret",
+  ]},
+  // ── Virements émis
+  {name:"Virements émis", keys:[
+    "vir sct inst emis","virt cpte a cpte emis","virement emis","cpt a cpt",
+    "vir inst emis","virement inst emis",
+  ]},
+  // ── Banque & Frais financiers (frais purs uniquement)
+  {name:"Banque/Frais", keys:[
+    "frais ","commission","cotisation carte","agios","interets debiteurs","depassement",
+    "prelevement banque","penalite","rejet ","incident","irregularite",
+    "commissions hello","hello prime","offre groupee","f cotis pratiq",
+    "cotis nickel","tenue de compte","frais tenue","abonnement bancaire",
+  ]},
+  // ── Crédits & Prêts
+  {name:"Crédits/Prêts", keys:[
+    "credipar","franfinance","floa","diac","sofinco","cetelem","cofidis",
+    "ech pret","echeance pret","remboursement pret","assurance pret","cnp pret",
+    "reglement assu","assurance emprunteur","personal finance location",
+    "credit conso","credit auto","mensualite","pret habitat","pret immo",
+  ]},
+  // ── Coiffure & Beauté
+  {name:"Coiffure/Beauté", keys:[
+    "coiffure","barbier","coiffeur","hair","coup eur","barber",
+    "institut","esthetique","beaute","nail","onglerie","spa ","sauna","hammam",
+    "sephora","nocibe","yves rocher","marionnaud","l'occitane",
+  ]},
+  // ── Impôts & Taxes
+  {name:"Impôts/Taxes", keys:[
+    "impot","taxe fonciere","taxe habitation","redevance","tresor public",
+    "dir. gene. des finances","finances publiques","dgfip","urssaf","cotisation sociale",
+    "contribution","csg","crds","taxe ","amendes","contravention",
+  ]},
+  // ── Assurances (hors prêt et habitation)
+  {name:"Assurances", keys:[
+    "maaf assurance","mma assurance","axa assurance","groupama","allianz","pacifica",
+    "matmut","macif","gmf ","april assur","smatis","generali","ag2r",
+    "pgv maison","assurance auto","assurance moto","assurance sante","protection juridique",
+    "garantie","rc pro",
+  ]},
+  // ── Crédits & Prêts (hors remboursement entrant)
+  {name:"Crédits/Prêts", keys:[
+    "ech pret","echeance","remb pret","mensualite","credit conso","credit auto",
+    "credipar","franfinance","floa bank","diac","sofinco","cetelem","cofidis",
+    "personal finance","reglement assu. cnp","cnp pret habitat",
+  ]},
+];
+
+let allTransactions=[];
+let accounts=[];
+let filtered=[];
+let activeAccount="Tous";
+let charts={};
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function log(msg){const el=document.getElementById("debug-log");el.style.display="block";el.innerHTML+=msg+"<br>";el.scrollTop=el.scrollHeight;}
+
+// Montant bancaire max plausible
+const MAX_AMOUNT = 500000;
+
+function parseAmount(s){
+  if(s===null||s===undefined||s==="") return 0;
+  let str=String(s).trim();
+  str=str.replace(/\u00a0/g,"").replace(/\s/g,"");
+  if(/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(str)){
+    str=str.replace(/\./g,"").replace(",",".");
+  } else {
+    str=str.replace(",",".");
+  }
+  str=str.replace(/[^0-9.\-+]/g,"");
+  return parseFloat(str)||0;
+}
+
+// Valide qu'un token est un montant bancaire réel (2 décimales exactes, <= MAX_AMOUNT)
+function isValidAmount(s){
+  const str=String(s||'').trim().replace(/\u00a0/g,'').replace(/\s/g,'');
+  if(!(/[,\.]\d{2}$/.test(str))) return false;
+  const v=Math.abs(parseAmount(s));
+  return v > 0 && v <= MAX_AMOUNT;
+}
+
+function parseDate(s,yearHint){
+  if(!s) return null;
+  s=String(s).trim();
+  let m;
+  // JJ.MM (Hello Bank style) → nécessite yearHint
+  if((m=s.match(/^(\d{2})\.(\d{2})$/))&&yearHint){
+    return new Date(`${yearHint}-${m[2]}-${m[1]}`);
+  }
+  // JJ/MM/YYYY
+  if((m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+  // YYYY-MM-DD
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) return new Date(s);
+  // DD-MM-YYYY
+  if((m=s.match(/^(\d{2})-(\d{2})-(\d{4})$/))) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+  // DD/MM/YY
+  if((m=s.match(/^(\d{2})\/(\d{2})\/(\d{2})$/))) return new Date(`20${m[3]}-${m[2]}-${m[1]}`);
+  // JJ.MM.YYYY
+  if((m=s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/))) return new Date(`${m[3]}-${m[2]}-${m[1]}`);
+  return null;
+}
+
+function fmtDate(d){return d?d.toLocaleDateString("fr-FR"):"—"}
+function fmtEur(v){return new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR"}).format(v)}
+
+function categorize(label){
+  const l=(label||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  for(const cat of CATEGORIES) if(cat.keys.some(k=>l.includes(k))) return cat.name;
+  return "Autre";
+}
+
+function detectCols(headers){
+  const h=headers.map(x=>String(x).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim());
+  const find=(...terms)=>h.findIndex(x=>terms.some(t=>x.includes(t)));
+  return{
+    date:   find("date","dat","jour"),
+    label:  find("libelle","label","motif","description","intitule","operation","nature","designation"),
+    debit:  find("debit","sortie","depense","retrait"),
+    credit: find("credit","entree","recette","versement"),
+    amount: find("montant","amount","solde mvt","valeur","mouvement"),
+    balance:find("solde","balance","cumul"),
+  };
+}
+
+function normalizeRows(rows,cols,acc,bank,yearHint){
+  return rows
+    .filter(r=>r&&Object.values(r).some(v=>v!==""&&v!==undefined&&v!==null))
+    .map((r,i)=>{
+      const v=Object.values(r);
+      let amount=0;
+      if(cols.debit>=0&&cols.credit>=0){
+        const d=parseAmount(v[cols.debit]),c=parseAmount(v[cols.credit]);
+        amount=c!==0?c:(d!==0?-Math.abs(d):0);
+      } else if(cols.amount>=0){
+        amount=parseAmount(v[cols.amount]);
+      }
+      const rawDate=cols.date>=0?v[cols.date]:"";
+      const date=parseDate(rawDate,yearHint);
+      const label=cols.label>=0?String(v[cols.label]||""):`Opération ${i+1}`;
+      return{id:`${acc}-${i}`,date,label,amount,account:acc,bank,category:categorize(label)};
+    })
+    .filter(r=>r.date!==null&&r.amount!==0);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PARSERS PDF PAR FORMAT BANCAIRE
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Détecte le format du PDF depuis le texte de la 1ère page
+function detectBankFormat(text) {
+  const t = text.toLowerCase();
+  if (/nickel|compte-nickel|cmcifrp1nic/i.test(text))     return "nickel";
+  if (/hello\s*bank|hellobank|bnpafrpp/i.test(text))      return "hellobank";
+  if (/monabanq|cmcifrp1mon/i.test(text))                  return "monabanq";
+  if (/cr[eé]dit\s*agricole|agrifrpp/i.test(text))         return "ca";
+  if (/soci[eé]t[eé]\s*g[eé]n[eé]rale|sogefrpp/i.test(text)) return "sg";
+  if (/caisse\s*d.?[eé]pargne|cepafrpp/i.test(text))       return "ce";
+  if (/banque\s*postale|psstfrppxxx/i.test(text))           return "bp";
+  if (/boursorama/i.test(text))                             return "boursorama";
+  if (/cr[eé]dit\s*mutuel|cmcifrpp/i.test(text))           return "cm";
+  if (/lcl\b|lclffrp/i.test(text))                         return "lcl";
+  return "generic";
+}
+
+// ── Reconstruit les lignes d'un PDF par coordonnée Y ─────────────────────────
+function pdfItemsToLines(items, yTolerance = 2) {
+  const byY = {};
+  for (const item of items) {
+    if (!item.str.trim()) continue;
+    const y = Math.round(item.transform[5] / yTolerance) * yTolerance;
+    if (!byY[y]) byY[y] = [];
+    byY[y].push({ x: item.transform[4], text: item.str.trim(), y });
+  }
+  // Trier par Y décroissant (haut → bas), chaque ligne triée par X
+  return Object.values(byY)
+    .sort((a, b) => b[0].y - a[0].y)
+    .map(row => row.sort((a, b) => a.x - b.x));
+}
+
+// ── Extrait l'année depuis un texte ──────────────────────────────────────────
+function extractYear(text) {
+  const m = text.match(/\b(20\d{2})\b/);
+  return m ? parseInt(m[1]) : new Date().getFullYear();
+}
+
+// ── PARSER GÉNÉRIQUE STRUCTURÉ (Hello Bank, CA, SG, etc.) ────────────────────
+// Approche : on travaille directement sur les mots bruts triés par Y puis X.
+// Une transaction Hello Bank peut s'étaler sur 2 lignes adjacentes :
+//   Ligne A (y=227) : libellé uniquement  (x=74)
+//   Ligne B (y=228) : date (x=31) + date valeur (x=320) + montant (x=434)
+// Ou tout sur une seule ligne :
+//   Ligne A (y=314) : date (x=31) + libellé (x=74) + date valeur (x=320) + montant (x=434)
+// Stratégie :
+//   1. Extraire tous les mots avec x,y
+//   2. Identifier les "ancres de montant" : lignes qui ont date (x<50) + montant (x>400)
+//   3. Pour chaque ancre, le libellé = mots à x>50,x<300 sur CETTE ligne OU ligne juste AU-DESSUS
+// Helper : extrait le montant d'une colonne X dans une ligne de mots
+// Gère le cas "1" + "300,00" → 1300.00
+function getColAmount(colX, row, parseFn) {
+  const candidates = row.filter(r => Math.abs(r.x - colX) < 50);
+  if (!candidates.length) return 0;
+  let best = 0;
+  for (const r of candidates) {
+    let v = parseFn(r.text);
+    const wi = row.indexOf(r);
+    if (wi > 0) {
+      const prev = row[wi-1];
+      if (/^\d{1,3}$/.test(prev.text) && /^\d{3}[,.]/.test(r.text)) {
+        const combined = parseFn(prev.text + r.text);
+        if (combined > v) v = combined;
+      }
+    }
+    if (v > best) best = v;
+  }
+  return best;
+}
+
+async function parsePDFGeneric(pdf, acc, bank, yearHint) {
+  const results = [];
+  let year = yearHint || new Date().getFullYear();
+
+  const SKIP_LINE = /^(solde|total|iban|bic|rib|page|notprovided|refdo|refben|www\.|hello\s*bank|hellobank|garantie|monnaie|scpt|id\.\s*ce|orias|montant\s+de|taux|taeg|coût|coordonnées|délai\s+ramené|effectué)/i;
+  const SKIP_WORD = /^(refdo|refben|notprovided|[a-f0-9]{20,}|\d{20,})$/i; // hashes, longs IDs
+  const DATE_RE   = /^(\d{1,2})[.\/](\d{2})(?:[.\/](\d{2,4}))?$/;
+  const AMOUNT_RE = /^\d{1,3}([ \u00a0]\d{3})*[,.]\d{2}$/; // "2,65" "1 300,00" "2 070,37"
+
+  function parseLocalAmount(s) {
+    let str = String(s).replace(/\u00a0/g,'').replace(/\s/g,'');
+    if (/^\d{1,3}(\.\d{3})+(,\d{2})?$/.test(str)) str = str.replace(/\./g,'').replace(',','.');
+    else str = str.replace(',','.');
+    const v = parseFloat(str);
+    return (isNaN(v) || v <= 0 || v > 500000) ? 0 : v;
+  }
+
+  function buildDate(dm) {
+    if (!dm) return null;
+    let date;
+    if (dm[3]) {
+      const yr = dm[3].length === 2 ? 2000 + parseInt(dm[3]) : parseInt(dm[3]);
+      date = new Date(`${yr}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`);
+    } else {
+      date = new Date(`${year}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`);
+    }
+    return (date && !isNaN(date)) ? date : null;
+  }
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page  = await pdf.getPage(pageNum);
+    const ct    = await page.getTextContent();
+    const pageText = ct.items.map(i => i.str).join(' ');
+    const y2 = extractYear(pageText);
+    if (y2 > 2000) year = y2;
+
+    // ── 1. Mots bruts triés par Y décroissant (haut→bas), puis X ─────────────
+    const words = ct.items
+      .map(it => ({ x: Math.round(it.transform[4]), y: Math.round(it.transform[5]), text: it.str.trim() }))
+      .filter(w => w.text.length > 0)
+      .sort((a, b) => b.y - a.y || a.x - b.x);
+
+    // ── 2. Détecter positions colonnes Débit / Crédit ─────────────────────────
+    // Chercher la ligne entête "Débit" "Crédit"
+    // On groupe par Y pour trouver l'entête
+    const byY = {};
+    for (const w of words) {
+      if (!byY[w.y]) byY[w.y] = [];
+      byY[w.y].push(w);
+    }
+    let colDebit = 424, colCredit = 516; // valeurs par défaut Hello Bank p2
+    for (const y of Object.keys(byY).sort((a,b) => b-a)) {
+      const row = byY[y];
+      const texts = row.map(r => r.text);
+      if (texts.some(t => /^d[eé]bit$/i.test(t)) && texts.some(t => /^cr[eé]dit$/i.test(t))) {
+        const di = row.find(r => /^d[eé]bit$/i.test(r.text));
+        const ci = row.find(r => /^cr[eé]dit$/i.test(r.text));
+        if (di) colDebit  = di.x;
+        if (ci) colCredit = ci.x;
+        log(`[p${pageNum}] colDebit=${colDebit} colCredit=${colCredit}`);
+        break;
+      }
+    }
+
+    // ── 3. Identifier les lignes "ancre" : ont une date x<50 ─────────────────
+    // Grouper par Y (tolérance 2px)
+    const rows2 = {};
+    for (const w of words) {
+      const yk = Math.round(w.y / 2) * 2;
+      if (!rows2[yk]) rows2[yk] = [];
+      rows2[yk].push(w);
+    }
+    const sortedYs = Object.keys(rows2).map(Number).sort((a,b) => b-a);
+
+    // ── 4. Construire les transactions ────────────────────────────────────────
+    // Pour chaque Y, si la ligne contient une date à x<50 ET un montant → c'est une ancre
+    // Si la ligne contient un montant mais pas de date → chercher date sur ligne adjacente
+    // Si la ligne contient une date mais pas de montant → probablement libellé seul (cas rare)
+
+    // On va construire une liste de "blocs transaction" :
+    // {date, labelLines: [array of words], debitVal, creditVal}
+
+    const txBlocks = [];
+
+    for (let yi = 0; yi < sortedYs.length; yi++) {
+      const yk = sortedYs[yi];
+      const row = rows2[yk].sort((a,b) => a.x - b.x);
+      const rowText = row.map(r => r.text).join(' ');
+
+      // Ignorer lignes parasites
+      if (SKIP_LINE.test(rowText.trim())) continue;
+      if (row.every(r => SKIP_WORD.test(r.text))) continue;
+
+      // Chercher date à x < 50
+      const dateItem = row.find(r => r.x < 50 && DATE_RE.test(r.text));
+
+      // Chercher montants dans colonnes débit/crédit (±40px)
+      const debitW  = row.filter(r => Math.abs(r.x - colDebit)  < 50 && parseLocalAmount(r.text) > 0);
+      const creditW = row.filter(r => Math.abs(r.x - colCredit) < 50 && parseLocalAmount(r.text) > 0);
+
+      // Cas : montant PRÉSENT sur cette ligne
+      const hasAmount = debitW.length > 0 || creditW.length > 0;
+
+      if (!hasAmount) continue; // pas de montant → ligne de continuation, sera rattachée
+
+      // Trouver la date : sur cette ligne ou ligne précédente (y légèrement plus grand)
+      let dateDm = null;
+      let dateSource = null;
+
+      if (dateItem) {
+        dateDm = dateItem.text.match(DATE_RE);
+        dateSource = 'same';
+      } else {
+        // Chercher dans la ligne juste au-dessus (yi-1 dans sortedYs, mais Y plus grand)
+        // La ligne "au-dessus" a un Y légèrement plus grand (PDF coord = bas de page = petit Y)
+        // On cherche dans les 15px au-dessus
+        for (let dyi = yi - 1; dyi >= Math.max(0, yi-3); dyi--) {
+          const prevYk = sortedYs[dyi];
+          if (Math.abs(prevYk - yk) > 20) break;
+          const prevRow = rows2[prevYk];
+          const prevDate = prevRow?.find(r => r.x < 50 && DATE_RE.test(r.text));
+          if (prevDate) {
+            dateDm = prevDate.text.match(DATE_RE);
+            dateSource = 'prev';
+            break;
+          }
+        }
+      }
+
+      if (!dateDm) continue;
+      const date = buildDate(dateDm);
+      if (!date) continue;
+
+      // Libellé : mots x entre 50 et colDebit-30, sur CETTE ligne et ligne(s) adjacentes sans montant
+      const labelWords = [];
+
+      // Ligne courante : mots x > 50 et x < colDebit - 30
+      const labelFromCurrent = row.filter(r =>
+        r.x > 50 && r.x < colDebit - 30 &&
+        !DATE_RE.test(r.text) &&
+        !SKIP_WORD.test(r.text)
+      );
+      labelWords.push(...labelFromCurrent);
+
+      // Si la date vient de la ligne précédente (dateSource='prev'), 
+      // le libellé principal est sur la ligne PRÉCÉDENTE (au-dessus)
+      if (dateSource === 'prev') {
+        for (let dyi = yi - 1; dyi >= Math.max(0, yi-3); dyi--) {
+          const prevYk = sortedYs[dyi];
+          if (Math.abs(prevYk - yk) > 20) break;
+          const prevRow = rows2[prevYk];
+          if (!prevRow) continue;
+          const prevLabel = prevRow.filter(r =>
+            r.x > 50 && r.x < colDebit - 30 &&
+            !DATE_RE.test(r.text) &&
+            !SKIP_WORD.test(r.text)
+          );
+          labelWords.unshift(...prevLabel); // mettre en premier
+        }
+      }
+
+      // Lignes de continuation EN DESSOUS (Y plus petit = lignes suivantes)
+      for (let dyi = yi + 1; dyi < Math.min(sortedYs.length, yi+4); dyi++) {
+        const nextYk = sortedYs[dyi];
+        if (Math.abs(nextYk - yk) > 40) break;
+        const nextRow = rows2[nextYk];
+        if (!nextRow) continue;
+        // La ligne de continuation n'a pas de date ni de montant
+        const nextHasDate   = nextRow.some(r => r.x < 50 && DATE_RE.test(r.text));
+        const nextHasAmount = nextRow.some(r =>
+          (Math.abs(r.x - colDebit) < 50 || Math.abs(r.x - colCredit) < 50) &&
+          parseLocalAmount(r.text) > 0
+        );
+        if (nextHasDate || nextHasAmount) break;
+        const contLabel = nextRow.filter(r =>
+          r.x > 50 && r.x < colDebit - 10 &&
+          !SKIP_WORD.test(r.text)
+        );
+        labelWords.push(...contLabel);
+      }
+
+      let label = labelWords.map(r => r.text).join(' ').trim();
+      // Si pas de libellé sur cette ligne, chercher sur la ligne juste au-dessus (continuation)
+      if (!label) {
+        const yi2 = sortedYs.indexOf(yk);
+        for (let dyi = yi2 - 1; dyi >= Math.max(0, yi2-2); dyi--) {
+          const prevYk2 = sortedYs[dyi];
+          if (Math.abs(prevYk2 - yk) > 20) break;
+          const prevRow2 = rows2[prevYk2];
+          const prevLabel2 = prevRow2.filter(r =>
+            r.x > 50 && r.x < colDebit - 30 &&
+            !DATE_RE.test(r.text) && !SKIP_WORD.test(r.text)
+          );
+          if (prevLabel2.length) { label = prevLabel2.map(r => r.text).join(' ').trim(); break; }
+        }
+      }
+      // Dernier recours : libellé générique à partir de la date
+      if (!label) label = `Opération ${fmtDate(date)}`;
+
+      // Montants — Hello Bank split "1 300,00" en ["1","300,00"], "2 070,37" en ["2","070,37"]
+      const debitVal  = getColAmount(colDebit,  row, parseLocalAmount);
+      const creditVal = getColAmount(colCredit, row, parseLocalAmount);
+
+      let amount = 0;
+      if      (creditVal > 0 && debitVal === 0) amount =  creditVal;
+      else if (debitVal  > 0 && creditVal === 0) amount = -debitVal;
+      else if (creditVal > 0 && debitVal  > 0) {
+        const isIn = /recu|recue|vir\s+de\s+|salaire|allocation|revenu|caf|prestation|paierie|indemnit/i.test(label);
+        amount = isIn ? creditVal : -debitVal;
+      }
+
+      if (amount === 0) continue;
+
+      txBlocks.push({ date, label, amount });
+      log(`✅ [p${pageNum}] ${fmtDate(date)} | ${label.slice(0,40)} | ${fmtEur(amount)}`);
+    }
+
+    // Dédoublonnage sur la page (même date+label+amount)
+    const seen = new Set();
+    for (const tx of txBlocks) {
+      const key = `${tx.date.toISOString().slice(0,10)}|${tx.label}|${tx.amount}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      results.push({ id:`${acc}-g-${pageNum}-${tx.date.getTime()}-${Math.random()}`, ...tx, account:acc, bank, category:categorize(tx.label) });
+    }
+  }
+  // Extraction solde ouverture/clôture (générique)
+  let soldeOuverture = null, soldeFinal = null, dateFinal = null;
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const ct   = await page.getTextContent();
+    const pageText = ct.items.map(i=>i.str).join(' ');
+    // Chercher "SOLDE CREDITEUR AU JJ.MM.YYYY  XXXXX,XX"
+    const soldeMatches = [...pageText.matchAll(/SOLDE\s+(?:CREDITEUR|DEBITEUR)\s+AU\s+([\d.\/]+)[\s\S]*?([\d\s]+[,.]\d{2})/gi)];
+    for (const m of soldeMatches) {
+      const dateStr = m[1], amtStr = m[2].trim();
+      const isDebit = /debiteur/i.test(m[0]);
+      const amt = parseAmount(amtStr);
+      if (amt <= 0) continue;
+      const val = isDebit ? -amt : amt;
+      if (soldeOuverture === null) soldeOuverture = val;
+      else { soldeFinal = val; dateFinal = dateStr; }
+    }
+  }
+  return { transactions: results, soldeOuverture, soldeFinal, dateFinal };
+}
+
+// ── PARSER MONABANQ ─────────────────────────────────────────────────────────
+// Format : Date JJ/MM/YYYY | Date valeur | Opération | Débit EUROS | Crédit EUROS
+// Particularité : montants avec point millier "1.857,70", colonnes bien séparées
+async function parsePDFMonabanq(pdf, acc, bank) {
+  const results = [];
+  let year = new Date().getFullYear();
+
+  const SKIP = /^(solde|total|iban|bic|rib|page|www\.|monabanq|garantie|caisse|kv\.|information|remarque|\(ge\)|\(gd\)|situation|autorisations|facilit|livret|numéro|libellé|n°\s+de|releve|pratiq.*n°|titulaire|réf|<<suite|>>)/i;
+
+  function parseMona(s) {
+    s = String(s).replace(/\u00a0/g,'').replace(/\s/g,'');
+    // "1.857,70" → point milliers, virgule décimale
+    if (/^\d{1,3}(\.\d{3})+(,\d{2})?$/.test(s)) s = s.replace(/\./g,'').replace(',','.');
+    // "857,70" ou "5,13"
+    else if (/^\d+,\d{2}$/.test(s)) s = s.replace(',','.');
+    const v = parseFloat(s);
+    return (isNaN(v) || v <= 0 || v > 500000) ? 0 : v;
+  }
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const ct   = await page.getTextContent();
+    const pageText = ct.items.map(i => i.str).join(' ');
+    const y2 = extractYear(pageText);
+    if (y2 > 2000) year = y2;
+
+    // Grouper mots par Y (tolérance 3px)
+    const rows = {};
+    for (const item of ct.items) {
+      if (!item.str.trim()) continue;
+      const yk = Math.round(item.transform[5] / 3) * 3;
+      if (!rows[yk]) rows[yk] = [];
+      rows[yk].push({ x: Math.round(item.transform[4]), y: yk, text: item.str.trim() });
+    }
+    const sortedYs = Object.keys(rows).map(Number).sort((a,b) => b-a);
+
+    // Détecter colonnes Débit/Crédit
+    let colDebit = null, colCredit = null;
+    for (const yk of sortedYs) {
+      const row = rows[yk].sort((a,b) => a.x - b.x);
+      const txt = row.map(r => r.text).join(' ');
+      if (/d[eé]bit/i.test(txt) && /cr[eé]dit/i.test(txt)) {
+        // Chercher "Débit" et "Crédit" (mots séparés ou combinés)
+        const di = row.find(r => /^d[eé]bit$/i.test(r.text));
+        const ci = row.find(r => /^cr[eé]dit$/i.test(r.text));
+        if (di) colDebit  = di.x;
+        if (ci) colCredit = ci.x;
+        // Si "EUROS" suit, utiliser EUROS comme ancre plus précise
+        const dei = row.findIndex(r => /^d[eé]bit$/i.test(r.text));
+        const cri = row.findIndex(r => /^cr[eé]dit$/i.test(r.text));
+        // Les montants sont à droite de "Débit" et "Crédit" (dans leur cellule)
+        // Prendre le milieu entre les deux labels + décalage droite
+        log(`[p${pageNum}] Monabanq header: Débit x=${colDebit} Crédit x=${colCredit}`);
+        break;
+      }
+    }
+
+    // Separator = milieu entre les deux colonnes (les montants ne peuvent pas chevaucher)
+    const colSep = colDebit !== null && colCredit !== null
+      ? (colDebit + colCredit) / 2
+      : null;
+
+    log(`[p${pageNum}] colDebit=${colDebit} colCredit=${colCredit} sep=${colSep?.toFixed(0)}`);
+
+    const DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+
+    for (const yk of sortedYs) {
+      const row = rows[yk].sort((a,b) => a.x - b.x);
+      const rowText = row.map(r => r.text).join(' ');
+
+      if (SKIP.test(rowText.trim())) continue;
+
+      // Date = premier item x < 75 avec format JJ/MM/YYYY
+      const dateItem = row.find(r => r.x < 75 && DATE_RE.test(r.text));
+      if (!dateItem) continue;
+
+      const dm = dateItem.text.match(DATE_RE);
+      const date = new Date(`${dm[3]}-${dm[2]}-${dm[1]}`);
+      if (!date || isNaN(date)) continue;
+
+      // Libellé = mots entre x=140 et colDebit-30 (ou 380 si pas de header)
+      const maxLabelX = colDebit !== null ? colDebit - 20 : 380;
+      const labelItems = row.filter(r =>
+        r.x >= 140 && r.x < maxLabelX &&
+        !DATE_RE.test(r.text)
+      );
+      // Ligne de continuation (ligne suivante sans date)
+      const yi = sortedYs.indexOf(yk);
+      for (let dyi = yi+1; dyi < Math.min(sortedYs.length, yi+3); dyi++) {
+        const nextYk = sortedYs[dyi];
+        if (Math.abs(nextYk - yk) > 30) break;
+        const nextRow = rows[nextYk];
+        if (!nextRow) continue;
+        if (nextRow.some(r => r.x < 75 && DATE_RE.test(r.text))) break; // nouvelle transaction
+        // Lignes ICS:/RUM: → on les ignore dans le libellé
+        const nextText = nextRow.map(r=>r.text).join(' ');
+        if (/^(ICS|RUM|COMPTE|FACTURE|BEAUMONT|FREE HAUT|COTISATION|ANTHROPIC)/i.test(nextText.trim())) {
+          // garder quand même pour le libellé si c'est FACTURE SAUR etc.
+          if (/^(ICS|RUM)/i.test(nextText.trim())) continue;
+        }
+        const contItems = nextRow.filter(r => r.x >= 140 && r.x < maxLabelX && !DATE_RE.test(r.text));
+        labelItems.push(...contItems);
+      }
+      const label = labelItems.map(r => r.text).join(' ').trim();
+
+      // Montants : utiliser le séparateur de colonne pour distinguer débit/crédit
+      let debitVal = 0, creditVal = 0;
+      // IMPORTANT : on ne cherche les montants QUE dans les zones colonnes débit/crédit
+      // Les nombres dans le libellé (ex: "0604", "2804", "6,00 USD") sont ignorés
+      // Zone débit  : x entre colDebit-40 et colSep (ou colDebit+80 si pas de sep)
+      // Zone crédit : x entre colSep et colCredit+60
+
+      if (colSep !== null) {
+        const minDebit  = (colDebit  || 390) - 40;
+        const maxCredit = (colCredit || 520) + 60;
+        for (const r of row) {
+          // Ignorer les items clairement dans la zone libellé (x < 140 = date/date valeur, x 140-380 = libellé)
+          if (r.x < maxLabelX) continue;
+          const v = parseMona(r.text);
+          if (v <= 0) continue;
+          if (r.x >= minDebit && r.x <= colSep) debitVal  = Math.max(debitVal,  v);
+          else if (r.x > colSep && r.x <= maxCredit) creditVal = Math.max(creditVal, v);
+        }
+      } else {
+        for (const r of row) {
+          if (r.x < maxLabelX) continue;
+          const v = parseMona(r.text);
+          if (v <= 0) continue;
+          if (r.x < 460) debitVal  = Math.max(debitVal,  v);
+          else           creditVal = Math.max(creditVal, v);
+        }
+      }
+
+      // Gérer split milliers "1" + "857,70" (mot avant + mot montant)
+      // Déjà géré par parseMona si le mot est "1.857,70", mais si split en 2 mots :
+      // Monabanq semble utiliser le point donc pas de split (contrairement à Hello Bank avec espace)
+      // Vérification : dans le PDF Monabanq, "1.857,70" est UN seul mot → pas de split à gérer
+
+      let amount = 0;
+      if      (creditVal > 0 && debitVal === 0) amount =  creditVal;
+      else if (debitVal  > 0 && creditVal === 0) amount = -debitVal;
+      else if (creditVal > 0 && debitVal  > 0) {
+        // Les deux côtés ont un montant → heuristique libellé
+        const isIn = /vir\s*(paierie|inst\s*m\s*michel|inst\s*hello|paiement\s+cb.*credit)/i.test(label);
+        amount = isIn ? creditVal : -debitVal;
+      }
+
+      if (amount === 0) continue;
+
+      results.push({
+        id: `${acc}-mb-${pageNum}-${yk}`,
+        date, label: label || `Opération ${dateItem.text}`,
+        amount, account: acc, bank,
+        category: categorize(label)
+      });
+      log(`✅ [mb p${pageNum}] ${fmtDate(date)} | ${label.slice(0,38)} | ${fmtEur(amount)}`);
+    }
+  }
+  // Extraire solde initial et final depuis les lignes SOLDE CREDITEUR/DEBITEUR
+  let soldeOuverture = null, soldeFinal = null, dateFinal = null;
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page  = await pdf.getPage(pageNum);
+    const ct    = await page.getTextContent();
+    const items = ct.items.map(i => ({ x: Math.round(i.transform[4]), y: Math.round(i.transform[5]), text: i.str.trim() })).filter(i => i.text);
+    const rowsS = {};
+    for (const it of items) { const yk = Math.round(it.y/3)*3; if (!rowsS[yk]) rowsS[yk]=[]; rowsS[yk].push(it); }
+    for (const yk of Object.keys(rowsS).sort((a,b)=>b-a)) {
+      const row = rowsS[yk].sort((a,b)=>a.x-b.x);
+      const txt = row.map(r=>r.text).join(' ');
+      if (/solde\s+(crediteur|debiteur)/i.test(txt)) {
+        const dateM = txt.match(/(\d{2}\/\d{2}\/\d{4})/);
+        const amtItem = row.filter(r => parseMona(r.text) > 0).pop();
+        const amt = amtItem ? parseMona(amtItem.text) : 0;
+        const isDebit = /debiteur/i.test(txt);
+        const val = isDebit ? -amt : amt;
+        // Priorité aux mots-clés "nouveau"/"ancien" si présents
+        const isFinal = /nouveau\s+solde|solde\s+(?:cr[eé]diteur|d[eé]biteur)\s+au\s+\d{2}[.\/]\d{2}[.\/]\d{4}/i.test(txt) && soldeOuverture !== null;
+        if (isFinal) { soldeFinal = val; if (dateM) dateFinal = dateM[1]; }
+        else if (!soldeOuverture) { soldeOuverture = val; }
+        else { soldeFinal = val; if (dateM) dateFinal = dateM[1]; }
+      }
+    }
+  }
+  return { transactions: results, soldeOuverture, soldeFinal, dateFinal };
+}
+
+// ── PARSER CRÉDIT AGRICOLE (format JJ.MM + date valeur JJ.MM) ────────────────
+async function parsePDFCA(pdf, acc, bank) {
+  const results = [];
+  let year = new Date().getFullYear();
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(i => i.str).join(" ");
+    year = extractYear(pageText);
+
+    const lines = pdfItemsToLines(content.items, 3);
+
+    let colDebit = null, colCredit = null;
+    for (const row of lines) {
+      const txt = row.map(r => r.text).join(" ");
+      if (/\bd[eé]bit\b/i.test(txt) && /\bcr[eé]dit\b/i.test(txt) && /lib[eé]ll[eé]/i.test(txt)) {
+        const di = row.find(r => /\bd[eé]bit\b/i.test(r.text));
+        const ci = row.find(r => /\bcr[eé]dit\b/i.test(r.text));
+        if (di) colDebit  = di.x;
+        if (ci) colCredit = ci.x;
+        break;
+      }
+    }
+    if (colDebit === null)  colDebit  = 430;
+    if (colCredit === null) colCredit = 500;
+
+    for (const row of lines) {
+      const rowText = row.map(r => r.text).join(" ");
+      if (/solde|total\s+des|iban|bic|page\s+\d|synthese|situation|ancien\s+solde|nouveau\s+solde|taux\s+d.int|autoris|garantie\s+des\s+d[eé]p|lib[eé]ll[eé]\s+des\s+op|date\s+op|date\s+val|votre\s+agence|vos\s+contacts|ca\s+aquitaine|evollis/i.test(rowText)) continue;
+      if (rowText.length < 4) continue;
+
+      const first = row[0];
+      // CA : JJ.MM
+      const dm = first.text.match(/^(\d{2})\.(\d{2})$/);
+      if (!dm) continue;
+      const date = new Date(`${year}-${dm[2]}-${dm[1]}`);
+      if (!date || isNaN(date)) continue;
+
+      // Ignorer la colonne "date valeur" (2e item si c'est aussi une date)
+      const labelItems = row.filter(r =>
+        r !== first &&
+        r.x < colDebit - 25 &&
+        !isValidAmount(r.text) &&
+        !/^\d{2}\.\d{2}$/.test(r.text)
+      );
+      const label = labelItems.map(r => r.text).join(" ").trim();
+      if (!label) continue;
+
+      const debitItems  = row.filter(r => r.x >= colDebit  - 60 && r.x <= colDebit  + 60 && isValidAmount(r.text));
+      const creditItems = row.filter(r => r.x >= colCredit - 60 && r.x <= colCredit + 60 && isValidAmount(r.text));
+      const debitVal    = debitItems .reduce((s, r) => Math.max(s, parseAmount(r.text)), 0);
+      const creditVal   = creditItems.reduce((s, r) => Math.max(s, parseAmount(r.text)), 0);
+
+      let amount = 0;
+      if      (creditVal > 0 && debitVal === 0) amount =  creditVal;
+      else if (debitVal  > 0 && creditVal === 0) amount = -debitVal;
+      else if (creditVal > 0 && debitVal  > 0) {
+        const isIn = /virement\s+vir\s+inst|recu|paierie/i.test(label);
+        amount = isIn ? creditVal : -debitVal;
+      }
+      if (amount === 0) continue;
+
+      results.push({ id:`${acc}-ca-${pageNum}-${row[0].y}`, date, label, amount, account:acc, bank, category:categorize(label) });
+      log(`✅ [ca p${pageNum}] ${fmtDate(date)} | ${label.slice(0,38)} | ${fmtEur(amount)}`);
+    }
+  }
+    // Extraction soldes CA via regex sur le texte brut de chaque page
+  // On cherche exactement: "Ancien solde créditeur au DD.MM.YYYY" et "Nouveau solde créditeur au DD.MM.YYYY"
+  let soldeOuverture = null, soldeFinal = null, dateFinal = null;
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const ct   = await page.getTextContent();
+    // Reconstituer le texte de la page ligne par ligne (par Y)
+    const its = ct.items.map(i => ({x: Math.round(i.transform[4]), y: Math.round(i.transform[5]), t: i.str.trim()})).filter(i=>i.t);
+    const byY = {};
+    for (const i of its) { const yk=Math.round(i.y/3)*3; if(!byY[yk]) byY[yk]=[]; byY[yk].push(i); }
+    for (const yk of Object.keys(byY).sort((a,b)=>b-a)) {
+      const row = byY[yk].sort((a,b)=>a.x-b.x);
+      const txt = row.map(r=>r.t).join(' ');
+      // Chercher EXACTEMENT "Ancien solde" ou "Nouveau solde" suivi d'un montant
+      // Exclure les lignes parasites
+      if (!/\b(ancien|nouveau)\s+solde/i.test(txt)) continue;
+      // Extraire la date (format DD.MM.YYYY ou DD/MM/YYYY)
+      const dateM = txt.match(/(\d{2}[./]\d{2}[./]\d{4})/);
+      // Extraire le montant : chercher un token avec virgule et 2 décimales
+      // On cherche SPÉCIFIQUEMENT un token "X,XX" ou "X.XXX,XX" - pas une date
+      const amtToken = row.slice().reverse().find(r => /^\d{1,3}([.]\d{3})*(,\d{2})$/.test(r.t));
+      if (!amtToken) continue;
+      const amt = parseAmount(amtToken.t);
+      if (amt <= 0 || amt > 500000) continue;
+      const isNouveau = /nouveau/i.test(txt);
+      log('CA solde line: ' + (isNouveau ? 'FINAL' : 'OUVERTURE') + ' = ' + amt + ' date=' + (dateM?.[1]||''));
+      if (isNouveau) {
+        soldeFinal = amt;
+        dateFinal = dateM ? dateM[1] : '';
+      } else {
+        soldeOuverture = amt;
+      }
+    }
+  }
+  log('CA soldes: ouv=' + soldeOuverture + ' fin=' + soldeFinal + ' date=' + dateFinal);
+  return { transactions: results, soldeOuverture, soldeFinal, dateFinal };
+}
+
+// ── PARSER NICKEL ─────────────────────────────────────────────────────────────
+// Format : Date JJ/MM/YYYY | Libellé | Débit | Crédit (deux colonnes distinctes)
+async function parsePDFNickel(pdf, acc, bank) {
+  const results = [];
+  let year = new Date().getFullYear();
+  let soldeOuverture = null, soldeFinal = null, dateFinal = null;
+  const SKIP = /^(iban|bic|nickel|compte.nickel|page\s+\d|www\.|garantie|médiat|réclamation|fr\d{2}|les\s+sommes|cotisation\s+annuelle|conditions)/i;
+  const DATE_RE = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+
+  function parseN(s) {
+    s = String(s).replace(/\u00a0/g,'').replace(/\s/g,'').replace(',','.');
+    const v = parseFloat(s.replace(/[^0-9.\-]/g,''));
+    return (isNaN(v) || Math.abs(v) > 500000) ? 0 : v;
+  }
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const ct   = await page.getTextContent();
+    const pageText = ct.items.map(i=>i.str).join(' ');
+    const y2 = extractYear(pageText);
+    if (y2 > 2000) year = y2;
+
+    // Soldes
+    const soldeRe = /(?:solde|nouveau\s+solde|ancien\s+solde)[^\d]*(\d[\d\s]*[,.]\d{2})/gi;
+    for (const m of pageText.matchAll(soldeRe)) {
+      const v = Math.abs(parseN(m[1]));
+      if (!v) continue;
+      const ctx = pageText.slice(Math.max(0,m.index-40), m.index+60);
+      const dateM = ctx.match(/(\d{2}\/\d{2}\/\d{4})/);
+      if (soldeOuverture === null) soldeOuverture = v;
+      else { soldeFinal = v; dateFinal = dateM?.[1]||''; }
+    }
+
+    const rows = {};
+    for (const it of ct.items) {
+      if (!it.str.trim()) continue;
+      const yk = Math.round(it.transform[5]/3)*3;
+      if (!rows[yk]) rows[yk]=[];
+      rows[yk].push({ x: Math.round(it.transform[4]), text: it.str.trim() });
+    }
+    const sortedYs = Object.keys(rows).map(Number).sort((a,b)=>b-a);
+
+    let colDebit=380, colCredit=460, colSep=420;
+    for (const yk of sortedYs) {
+      const row = rows[yk].sort((a,b)=>a.x-b.x);
+      const txt = row.map(r=>r.text).join(' ');
+      if (/d[eé]bit/i.test(txt) && /cr[eé]dit/i.test(txt)) {
+        const di = row.find(r=>/^d[eé]bit$/i.test(r.text));
+        const ci = row.find(r=>/^cr[eé]dit$/i.test(r.text));
+        if (di) colDebit=di.x;
+        if (ci) colCredit=ci.x;
+        colSep = (colDebit+colCredit)/2;
+        break;
+      }
+    }
+    const maxLabelX = colDebit - 20;
+
+    for (const yk of sortedYs) {
+      const row = rows[yk].sort((a,b)=>a.x-b.x);
+      const rowText = row.map(r=>r.text).join(' ');
+      if (SKIP.test(rowText.trim())) continue;
+      const dateItem = row.find(r => r.x < 80 && DATE_RE.test(r.text));
+      if (!dateItem) continue;
+      const dm = dateItem.text.match(DATE_RE);
+      const date = new Date(`${dm[3]}-${dm[2]}-${dm[1]}`);
+      if (!date || isNaN(date)) continue;
+      const label = row.filter(r => r.x>=80 && r.x<maxLabelX && !DATE_RE.test(r.text)).map(r=>r.text).join(' ').trim();
+      let dv=0, cv=0;
+      for (const r of row) {
+        if (r.x < maxLabelX) continue;
+        const v = Math.abs(parseN(r.text));
+        if (!v) continue;
+        if (r.x <= colSep) dv = Math.max(dv, v);
+        else cv = Math.max(cv, v);
+      }
+      let amount = 0;
+      if (cv>0 && dv===0) amount=cv;
+      else if (dv>0 && cv===0) amount=-dv;
+      else if (cv>0 && dv>0) {
+        const isIn = /virement\s+re[çc]u|vir\s+inst|salaire|caf|allocation|rsa|paierie|remboursement/i.test(label);
+        amount = isIn ? cv : -dv;
+      }
+      if (!amount) continue;
+      results.push({ id:`${acc}-nk-${pageNum}-${yk}`, date, label:label||dateItem.text, amount, account:acc, bank, category:categorize(label) });
+      log(`[Nickel] ${fmtDate(date)} | ${label.slice(0,38)} | ${fmtEur(amount)}`);
+    }
+  }
+  return { transactions:results, soldeOuverture, soldeFinal, dateFinal };
+}
+
+// ── IMPORTPDF : dispatcher par format ────────────────────────────────────────
+async function importPDF(file, acc, bank) {
+  if (!window.pdfjsLib) throw new Error("pdf.js non chargé, rechargez la page");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  log(`📑 ${pdf.numPages} page(s)`);
+
+  const p1 = await pdf.getPage(1);
+  const c1 = await p1.getTextContent();
+  const p1text = c1.items.map(i=>i.str).join(' ');
+  const format = detectBankFormat(p1text);
+  const yearHint = extractYear(p1text);
+  log(`🏦 Format: ${format} | Année: ${yearHint}`);
+
+  let result;
+  if      (format === "monabanq") result = await parsePDFMonabanq(pdf, acc, bank);
+  else if (format === "ca")       result = await parsePDFCA(pdf, acc, bank);
+  else if (format === "nickel")   result = await parsePDFNickel(pdf, acc, bank);
+  else                            result = await parsePDFGeneric(pdf, acc, bank, yearHint);
+
+  const rows = result.transactions || result;
+  log(`📦 ${rows.length} transactions`);
+
+  if (!window.pendingMeta) window.pendingMeta = {};
+  if (result.soldeFinal !== undefined) {
+    window.pendingMeta[acc] = { soldeOuverture: result.soldeOuverture, soldeFinal: result.soldeFinal, dateFinal: result.dateFinal };
+    log(`💰 Solde réel: ${result.soldeFinal} (${result.dateFinal})`);
+  }
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DÉTECTION AUTOMATIQUE BANQUE / COMPTE
+// ══════════════════════════════════════════════════════════════════════════════
+const BANK_DETECT = [
+  { re: /monabanq/i,                          label: "Monabanq" },
+  { re: /nickel|compte.nickel|cmcifrp1nic/i,  label: "Nickel" },
+  { re: /hello\s*bank|hellobank/i,            label: "Hello Bank" },
+  { re: /bnp\s*paribas/i,                     label: "BNP Paribas" },
+  { re: /cr[eé]dit\s*agricole|agrifrpp/i,     label: "Crédit Agricole" },
+  { re: /soci[eé]t[eé]\s*g[eé]n[eé]rale/i,   label: "Société Générale" },
+  { re: /caisse\s*d.?[eé]pargne/i,            label: "Caisse d'Épargne" },
+  { re: /banque\s*postale/i,                  label: "La Banque Postale" },
+  { re: /cr[eé]dit\s*mutuel/i,                label: "Crédit Mutuel" },
+  { re: /banque\s*populaire/i,                label: "Banque Populaire" },
+  { re: /boursorama/i,                        label: "Boursorama" },
+  { re: /fortuneo/i,                          label: "Fortuneo" },
+  { re: /n26/i,                           label: "N26" },
+  { re: /revolut/i,                           label: "Revolut" },
+  { re: /lcl/i,                           label: "LCL" },
+  { re: /cic/i,                           label: "CIC" },
+];
+const ACCT_TYPE_DETECT = [
+  { re: /compte\s*courant|compte\s*ch[eè]que|releve\s*de\s*compte\s*ch[eè]que|pratiq|releve\s+de\s+comptes/i, label: "Courant" },
+  { re: /livret\s*d.?[eé]pargne|livret\s+[eé]pargne/i, label: "Livret Épargne" },
+  { re: /livret\s*a/i,   label: "Livret A" },
+  { re: /pel/i,           label: "PEL" },
+  { re: /cel/i,           label: "CEL" },
+  { re: /pea/i,           label: "PEA" },
+  { re: /compte\s*[eé]pargne/i, label: "Épargne" },
+  { re: /compte\s*joint/i,    label: "Joint" },
+  { re: /compte\s*pro/i,      label: "Pro" },
+];
+
+async function extractMetaFromFile(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
+  let text = "";
+  try {
+    if (ext === "pdf") {
+      if (!window.pdfjsLib) return null;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      const p1 = await pdf.getPage(1);
+      const c1 = await p1.getTextContent();
+      text = c1.items.map(i => i.str).join(" ");
+    } else if (ext === "csv" || ext === "txt") {
+      text = (await file.text()).slice(0, 2000);
+    } else if (ext === "xlsx" || ext === "xls") {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      text = wb.SheetNames.join(" ") + " " + (wb.Props?.Company||"") + " " + (wb.Props?.Title||"");
+    }
+  } catch(e) { return null; }
+  if (!text) return null;
+
+  // Banque
+  let bankName = "";
+  for (const p of BANK_DETECT) { if (p.re.test(text)) { bankName = p.label; break; } }
+
+  // Type de compte
+  let accountType = "Courant";
+  for (const p of ACCT_TYPE_DETECT) { if (p.re.test(text)) { accountType = p.label; break; } }
+
+  // Numéro de compte (derniers chiffres IBAN ou numéro de compte)
+  let accountNum = "";
+  const ibanM = text.match(/IBAN\s*:?\s*(FR\d{2}[\s\d]{15,30})/i);
+  if (ibanM) { const iban = ibanM[1].replace(/\s/g,""); accountNum = "…" + iban.slice(-5); }
+  if (!accountNum) { const m = text.match(/[Nn]°\s*(\d{8,12})/); if(m) accountNum = "…" + m[1].slice(-5); }
+  if (!accountNum) { const m = text.match(/RIB\s*:\s*[\d\s]+?([\d]{5})\s*\d{2}/i); if(m) accountNum = "…" + m[1]; }
+
+  // Construire le nom
+  let accName = "";
+  if (bankName) {
+    accName = bankName + " " + accountType;
+    if (accountNum) accName += " " + accountNum;
+  } else {
+    accName = file.name.replace(/\.[^.]+$/,"").replace(/[_\-]/g," ").slice(0,35).trim();
+  }
+
+  return { accName: accName.trim() || "Compte", bankName: bankName || "Inconnu" };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GESTION MULTI-FICHIERS
+// ══════════════════════════════════════════════════════════════════════════════
+let pendingFiles = [];
+let detectedMeta = { accName: "", bankName: "" };
+let accountMeta = {}; // {accName: {soldeOuverture, soldeFinal, dateFinal}}
+
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById("drop-zone").style.borderColor = "#93c5fd";
+  document.getElementById("drop-zone").style.background = "#f0f7ff";
+  onFilesChange(e.dataTransfer.files);
+}
+
+async function onFilesChange(fileList) {
+  if (!fileList || !fileList.length) return;
+  const btn = document.getElementById("btn-import");
+  btn.disabled = true;
+  document.getElementById("import-progress").textContent = "⏳ Analyse…";
+  const tasks = Array.from(fileList).map(async file => {
+    const meta = await extractMetaFromFile(file);
+    return {
+      file,
+      meta: meta || { accName: file.name.replace(/\.[^.]+$/,"").replace(/[_\-]/g," ").slice(0,35), bankName: "Inconnu" },
+      needsManual: !meta || !meta.accName
+    };
+  });
+  pendingFiles = await Promise.all(tasks);
+  renderFileList();
+  btn.disabled = false;
+  document.getElementById("import-progress").textContent = "";
+}
+
+function renderFileList() {
+  const el = document.getElementById("file-list");
+  if (!pendingFiles.length) { el.style.display = "none"; return; }
+  el.style.display = "block";
+  el.innerHTML = pendingFiles.map((item, i) => {
+    const ext = item.file.name.split(".").pop().toUpperCase();
+    const extColor = ext==="PDF" ? "#dc2626" : ext==="CSV" ? "#16a34a" : "#d97706";
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;flex-wrap:wrap">
+      <span style="background:${extColor}20;color:${extColor};border:1px solid ${extColor}40;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;min-width:36px;text-align:center">${ext}</span>
+      <div style="flex:1;min-width:120px">
+        <div style="font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" title="${item.file.name}">${item.file.name}</div>
+        ${item.needsManual
+          ? `<input type="text" placeholder="Nom du compte…" value="${item.meta.accName}"
+               style="margin-top:4px;padding:4px 8px;border:1px solid #fbbf24;border-radius:6px;font-size:12px;width:100%;background:#fffbeb"
+               oninput="pendingFiles[${i}].meta.accName=this.value">`
+          : `<div style="font-size:13px;font-weight:700;color:#1e293b">${item.meta.accName} <span style="color:#94a3b8;font-weight:400;font-size:11px">· ${item.meta.bankName}</span></div>`
+        }
+      </div>
+      <button onclick="pendingFiles.splice(${i},1);renderFileList()" style="border:none;background:none;cursor:pointer;color:#94a3b8;font-size:16px;padding:2px 6px">✕</button>
+    </div>`;
+  }).join("");
+  document.getElementById("btn-import").textContent = `Importer ${pendingFiles.length} fichier${pendingFiles.length>1?"s":""}`;
+}
+
+function toggleImport() { document.getElementById("import-panel").classList.toggle("hidden"); }
+function showError(msg) { const el=document.getElementById("import-error"); el.textContent=msg; el.classList.remove("hidden"); }
+function hideError() { document.getElementById("import-error").classList.add("hidden"); const dl=document.getElementById("debug-log"); dl.innerHTML=""; dl.style.display="none"; }
+
+async function doImport() {
+  if (!pendingFiles.length) { showError("Aucun fichier sélectionné."); return; }
+  hideError();
+  const btn = document.getElementById("btn-import");
+  btn.disabled = true;
+  const total = pendingFiles.length;
+  let done = 0, errors = [];
+  for (const item of pendingFiles) {
+    const { file, meta } = item;
+    const accName = meta.accName || file.name.replace(/\.[^.]+$/,"").slice(0,35);
+    const bankName = meta.bankName || "Inconnu";
+    const ext = file.name.split(".").pop().toLowerCase();
+    document.getElementById("import-progress").textContent = `⏳ ${done+1}/${total} — ${file.name}`;
+    try {
+      let rows = [];
+      if (ext==="csv"||ext==="txt") rows = await importCSV(file, accName, bankName);
+      else if (ext==="xlsx"||ext==="xls") rows = await importXLSX(file, accName, bankName);
+      else if (ext==="pdf") rows = await importPDF(file, accName, bankName);
+      else { errors.push(`${file.name} : format non supporté`); done++; continue; }
+      log(`📦 ${file.name} → ${rows.length} lignes`);
+      if (rows.length) addRows(rows, accName, bankName);
+      else errors.push(`${file.name} : 0 transaction`);
+    } catch(e) { errors.push(`${file.name} : ${e.message}`); log("❌ "+e.message); }
+    done++;
+  }
+  btn.disabled = false;
+  pendingFiles = [];
+  renderFileList();
+  document.getElementById("file-input").value = "";
+  document.getElementById("import-progress").textContent = `✅ ${done} fichier${done>1?"s":""} traité${done>1?"s":""}`;
+  if (errors.length) showError(errors.join(" · "));
+  else { document.getElementById("import-panel").classList.add("hidden"); hideError(); }
+  btn.textContent = "Tout importer";
+}
+
+function importCSV(file, acc, bank) {
+  return new Promise((res,rej) => {
+    Papa.parse(file, { header:true, skipEmptyLines:true, delimiter:"",
+      complete(r) {
+        if (!r.data.length) { rej(new Error("CSV vide")); return; }
+        const cols = detectCols(r.meta.fields||[]);
+        res(normalizeRows(r.data, cols, acc, bank, null));
+      },
+      error(e) { rej(e); }
+    });
+  });
+}
+
+function importXLSX(file, acc, bank) {
+  return new Promise((res,rej) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:"binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, { defval:"" });
+        if (!data.length) { rej(new Error("Excel vide")); return; }
+        const cols = detectCols(Object.keys(data[0]));
+        res(normalizeRows(data, cols, acc, bank, null));
+      } catch(e) { rej(e); }
+    };
+    reader.readAsBinaryString(file);
+  });
+}
+
+function addRows(rows, accName, bankName){
+  // Générer un ID unique pour ce lot = accName + timestamp
+  const batchId = `${accName}__${Date.now()}`;
+  const withCat = rows.map((r,i)=>({...r, id:`${batchId}-${i}`, category:categorize(r.label)}));
+  
+  // Dédoublonnage : éviter de réimporter exactement le même relevé
+  // On compare date+label+amount+account
+  const existingKeys = new Set(allTransactions.map(t=>`${t.account}|${t.date?.toISOString().slice(0,10)}|${t.label}|${t.amount}`));
+  const newRows = withCat.filter(r=>{
+    const key=`${r.account}|${r.date?.toISOString().slice(0,10)}|${r.label}|${r.amount}`;
+    return !existingKeys.has(key);
+  });
+  
+  allTransactions=[...allTransactions,...newRows].sort((a,b)=>b.date-a.date);
+  
+  if(!accounts.find(a=>a.name===accName)){
+    accounts.push({name:accName,bank:bankName,color:COLORS[accounts.length%COLORS.length]});
+  }
+  // Récupérer les soldes PDF si disponibles
+  if (window.pendingMeta && window.pendingMeta[accName]) {
+    accountMeta[accName] = window.pendingMeta[accName];
+    delete window.pendingMeta[accName];
+  }
+  
+  log(`➕ ${newRows.length} nouvelles opérations ajoutées (${withCat.length-newRows.length} doublons ignorés)`);
+  renderAll();
+}
+
+function clearAll(){
+  if(!confirm("Supprimer toutes les données ?"))return;
+  allTransactions=[]; accounts=[];
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("empty").classList.remove("hidden");
+  document.getElementById("btn-clear").style.display="none";
+  document.getElementById("hdr-info").textContent="";
+  document.getElementById("import-panel").classList.remove("hidden");
+  Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
+  charts={};
+}
+
+// ── Filtres ───────────────────────────────────────────────────────────────────
+function applyFilters(){
+  const month=document.getElementById("filter-month").value;
+  const search=document.getElementById("filter-search").value.toLowerCase();
+  filtered=allTransactions.filter(t=>{
+    if(activeAccount!=="Tous"&&t.account!==activeAccount)return false;
+    if(month!=="Tous"&&t.date.toISOString().slice(0,7)!==month)return false;
+    if(search&&!t.label.toLowerCase().includes(search)&&!t.category.toLowerCase().includes(search))return false;
+    return true;
+  });
+  updateKPIs(); updateCharts(); updateTables();
+  document.getElementById("filter-count").textContent=`${filtered.length} opération(s)`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderAll(){
+  document.getElementById("empty").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+  document.getElementById("btn-clear").style.display="";
+  document.getElementById("hdr-info").textContent=`${accounts.length} compte(s) · ${allTransactions.length} opération(s)`;
+
+  const pillsEl=document.getElementById("account-pills");
+  pillsEl.innerHTML="";
+  ["Tous",...accounts.map(a=>a.name)].forEach(name=>{
+    const acct=accounts.find(a=>a.name===name);
+    const btn=document.createElement("button");
+    btn.className="pill"+(name===activeAccount?" active":"");
+    btn.style.borderColor=acct?.color||"#2563eb";
+    if(name===activeAccount){btn.style.background=acct?.color||"#2563eb";btn.style.color="#fff";}
+    btn.innerHTML=name==="Tous"?"Tous les comptes":`${name}<span style="opacity:.65;font-size:10px;margin-left:4px">· ${acct?.bank}</span>`;
+    btn.onclick=()=>{activeAccount=name;renderAll();};
+    pillsEl.appendChild(btn);
+  });
+
+  const months=["Tous",...[...new Set(allTransactions.map(t=>t.date.toISOString().slice(0,7)))].sort().reverse()];
+  const mSel=document.getElementById("filter-month");
+  const curMonth=mSel.value;
+  mSel.innerHTML=months.map(m=>`<option value="${m}">${m==="Tous"?"Tous les mois":m}</option>`).join("");
+  if(months.includes(curMonth)) mSel.value=curMonth;
+
+  applyFilters();
+}
+
+function updateKPIs(){
+  const totalIn  = filtered.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const totalOut = filtered.filter(t=>t.amount<0).reduce((s,t)=>s+t.amount,0);
+  const variation = totalIn + totalOut;
+
+  // Comptes actifs dans le filtre courant
+  const activeAccs = activeAccount === "Tous"
+    ? accounts.map(a=>a.name)
+    : [activeAccount];
+
+  // Soldes réels disponibles (extraits des PDF)
+  const realBals = activeAccs
+    .filter(n => accountMeta[n]?.soldeFinal !== null && accountMeta[n]?.soldeFinal !== undefined)
+    .map(n => ({ name: n, val: accountMeta[n].soldeFinal, date: accountMeta[n].dateFinal }));
+
+  const kpiBalEl   = document.getElementById("kpi-balance");
+  const kpiLblEl   = document.getElementById("kpi-balance-label");
+  const kpiSubEl   = document.getElementById("kpi-ops");
+  const kpiAvgEl   = document.getElementById("kpi-avg");
+
+  if (realBals.length > 0) {
+    // ── Solde réel disponible ─────────────────────────────────────────────
+    const totalReal = realBals.reduce((s,r) => s + r.val, 0);
+    const dateLabel = realBals.length === 1 && realBals[0].date
+      ? `au ${realBals[0].date}` : "";
+
+    kpiLblEl.textContent = "💰 Solde réel";
+    kpiBalEl.textContent  = fmtEur(totalReal);
+    kpiBalEl.className    = "kpi-value " + (totalReal >= 0 ? "green" : "red");
+    kpiSubEl.textContent  = dateLabel ? dateLabel : `${filtered.length} opérations`;
+
+    // Variation = solde final - solde ouverture (si dispo) ou sum des transactions
+    const totalOpen = activeAccs
+      .filter(n => accountMeta[n]?.soldeOuverture !== null && accountMeta[n]?.soldeOuverture !== undefined)
+      .reduce((s,n) => s + accountMeta[n].soldeOuverture, 0);
+    const hasOpen = activeAccs.every(n => accountMeta[n]?.soldeOuverture !== undefined);
+    const varVal  = hasOpen ? (totalReal - totalOpen) : variation;
+    kpiAvgEl.textContent  = (varVal >= 0 ? "+" : "") + fmtEur(varVal);
+    kpiAvgEl.className    = "kpi-value " + (varVal >= 0 ? "green" : "red");
+
+  } else {
+    // ── Pas de solde réel → afficher variation des transactions ──────────
+    kpiLblEl.textContent  = "💰 Solde net";
+    kpiBalEl.textContent  = fmtEur(variation);
+    kpiBalEl.className    = "kpi-value " + (variation >= 0 ? "green" : "red");
+    kpiSubEl.textContent  = `${filtered.length} opérations`;
+    const months = [...new Set(filtered.map(t=>t.date.toISOString().slice(0,7)))].length || 1;
+    kpiAvgEl.textContent  = fmtEur(variation / months);
+    kpiAvgEl.className    = "kpi-value purple";
+  }
+
+  document.getElementById("kpi-in").textContent  = fmtEur(totalIn);
+  document.getElementById("kpi-out").textContent = fmtEur(Math.abs(totalOut));
+}
+
+function updateCharts(){
+  const byMonth={};
+  filtered.forEach(t=>{
+    const k=t.date.toISOString().slice(0,7);
+    if(!byMonth[k]) byMonth[k]={in:0,out:0};
+    if(t.amount>0) byMonth[k].in+=t.amount;
+    else byMonth[k].out+=Math.abs(t.amount);
+  });
+  const months=Object.keys(byMonth).sort();
+
+  if(charts.monthly) charts.monthly.destroy();
+  charts.monthly=new Chart(document.getElementById("chart-monthly"),{
+    type:"bar",
+    data:{labels:months,datasets:[
+      {label:"Entrées",data:months.map(m=>+byMonth[m].in.toFixed(2)),backgroundColor:"#16a34a88",borderColor:"#16a34a",borderWidth:1,borderRadius:4},
+      {label:"Sorties",data:months.map(m=>+byMonth[m].out.toFixed(2)),backgroundColor:"#dc262688",borderColor:"#dc2626",borderWidth:1,borderRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>fmtEur(v),font:{size:10}},grid:{color:"#f1f5f9"}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  const byCat={};
+  filtered.filter(t=>t.amount<0).forEach(t=>{byCat[t.category]=(byCat[t.category]||0)+Math.abs(t.amount);});
+  // (Le camembert reste sur les dépenses uniquement pour la lisibilité)
+  const catEntries=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  if(charts.pie) charts.pie.destroy();
+  charts.pie=new Chart(document.getElementById("chart-pie"),{
+    type:"doughnut",
+    data:{labels:catEntries.map(e=>e[0]),datasets:[{data:catEntries.map(e=>+e[1].toFixed(2)),backgroundColor:COLORS.slice(0,catEntries.length),borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:12}}}}
+  });
+
+  const sorted=[...filtered].sort((a,b)=>a.date-b.date);
+  let cum=0;
+  const lineData=sorted.map(t=>{cum+=t.amount;return{x:fmtDate(t.date),y:+cum.toFixed(2)};});
+  if(charts.line) charts.line.destroy();
+  charts.line=new Chart(document.getElementById("chart-line"),{
+    type:"line",
+    data:{labels:lineData.map(p=>p.x),datasets:[{label:"Solde cumulé",data:lineData.map(p=>p.y),borderColor:"#2563eb",backgroundColor:"#2563eb18",fill:true,pointRadius:0,tension:.3,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtEur(v),font:{size:10}},grid:{color:"#f1f5f9"}},x:{ticks:{maxTicksLimit:10,font:{size:10}}}}}
+  });
+}
+
+function updateTables(){
+  const MAX=300;
+  document.getElementById("tx-tbody").innerHTML=filtered.slice(0,MAX).map(t=>{
+    const acct=accounts.find(a=>a.name===t.account);
+    const ci=CATEGORIES.findIndex(c=>c.name===t.category);
+    const col=COLORS[ci>=0?ci%COLORS.length:9];
+    return `<tr>
+      <td>${fmtDate(t.date)}</td>
+      <td class="label-cell" title="${t.label.replace(/"/g,"&quot;")}">${t.label}</td>
+      <td><span class="badge" style="background:${col}20;color:${col};border:1px solid ${col}40">${t.category}</span></td>
+      <td><span style="color:${acct?.color||"#2563eb"};font-weight:700;font-size:11px">${t.account}</span></td>
+      <td style="font-size:11px;color:#94a3b8">${t.bank}</td>
+      <td class="${t.amount>=0?"amount-pos":"amount-neg"}">${fmtEur(t.amount)}</td>
+    </tr>`;
+  }).join("");
+  const more=document.getElementById("tx-more");
+  if(filtered.length>MAX){more.textContent=`${filtered.length-MAX} opérations supplémentaires`;more.classList.remove("hidden");}
+  else more.classList.add("hidden");
+
+  // Catégories dépenses ET revenus séparément
+  const byCatOut={}, byCatIn={};
+  filtered.forEach(t=>{
+    if(t.amount<0){
+      if(!byCatOut[t.category])byCatOut[t.category]={total:0,count:0};
+      byCatOut[t.category].total+=Math.abs(t.amount);byCatOut[t.category].count++;
+    } else {
+      if(!byCatIn[t.category])byCatIn[t.category]={total:0,count:0};
+      byCatIn[t.category].total+=t.amount;byCatIn[t.category].count++;
+    }
+  });
+  const catArrOut=Object.entries(byCatOut).sort((a,b)=>b[1].total-a[1].total);
+  const catArrIn =Object.entries(byCatIn ).sort((a,b)=>b[1].total-a[1].total);
+  const catTotalOut=catArrOut.reduce((s,e)=>s+e[1].total,0);
+  const catTotalIn =catArrIn .reduce((s,e)=>s+e[1].total,0);
+
+  function catRow(name,{total,count},i,isIncome,catTotal){
+    const pct=(catTotal?total/catTotal*100:0).toFixed(1);
+    const col=COLORS[i%COLORS.length];
+    const amtClass=isIncome?"amount-pos":"amount-neg";
+    const sign=isIncome?"+":"";
+    return `<tr>
+      <td><span class="badge" style="background:${col}20;color:${col};border:1px solid ${col}40">${name}</span></td>
+      <td>${count}</td>
+      <td class="${amtClass}" style="text-align:right">${sign}${fmtEur(total)}</td>
+      <td><div class="cat-bar-wrap"><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${pct}%;background:${col}"></div></div><span class="cat-pct">${pct}%</span></div></td>
+    </tr>`;
+  }
+
+  const sepRow = catArrIn.length>0 ? `<tr><td colspan="4" style="padding:6px 10px;background:#f8fafc;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">📈 Entrées</td></tr>` : '';
+  const sepRowOut = catArrOut.length>0 ? `<tr><td colspan="4" style="padding:6px 10px;background:#f8fafc;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">📉 Dépenses</td></tr>` : '';
+
+  document.getElementById("cat-tbody").innerHTML =
+    sepRowOut + catArrOut.map(([ name,v],i)=>catRow(name,v,i,false,catTotalOut)).join("") +
+    sepRow    + catArrIn .map(([name,v],i)=>catRow(name,v,i,true, catTotalIn )).join("");
+
+  const byAcc={};
+  filtered.forEach(t=>{if(!byAcc[t.account])byAcc[t.account]={in:0,out:0,count:0};if(t.amount>0)byAcc[t.account].in+=t.amount;else byAcc[t.account].out+=t.amount;byAcc[t.account].count++;});
+  document.getElementById("comptes-grid").innerHTML=Object.entries(byAcc).map(([name,{in:i,out:o,count}])=>{
+    const acct=accounts.find(a=>a.name===name);
+    const solde=i+o;
+    const meta = accountMeta[name];
+    const soldeFinalPDF = meta?.soldeFinal;
+    const soldeFinalLabel = meta?.dateFinal ? `au ${meta.dateFinal}` : '';
+    return `<div class="acct-card" style="border-left-color:${acct?.color||"#2563eb"}">
+      <div class="acct-name" style="color:${acct?.color||"#2563eb"}">${name}</div>
+      <div class="acct-bank">${acct?.bank||""}</div>
+      ${soldeFinalPDF !== null && soldeFinalPDF !== undefined ? `
+      <div class="acct-row" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f1f5f9">
+        <span class="lbl2" style="font-size:12px">Solde réel ${soldeFinalLabel}</span>
+        <span style="font-weight:900;font-size:16px;color:${soldeFinalPDF>=0?"#16a34a":"#dc2626"}">${fmtEur(soldeFinalPDF)}</span>
+      </div>` : ''}
+      <div class="acct-row"><span class="lbl2">Variation du mois</span><span style="font-weight:800;color:${solde>=0?"#16a34a":"#dc2626"}">${solde>=0?'+':''}${fmtEur(solde)}</span></div>
+      <div class="acct-row"><span class="lbl2">Entrées</span><span class="green" style="font-weight:700">${fmtEur(i)}</span></div>
+      <div class="acct-row"><span class="lbl2">Sorties</span><span class="red" style="font-weight:700">${fmtEur(Math.abs(o))}</span></div>
+      <div class="acct-row"><span class="lbl2">Opérations</span><span style="font-weight:700">${count}</span></div>
+    </div>`;
+  }).join("");
+}
+
+function showTab(name,btn){
+  ["apercu","transactions","categories","comptes"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("hidden",t!==name);
+  });
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+}
+</script>
+</body>
+</html>
